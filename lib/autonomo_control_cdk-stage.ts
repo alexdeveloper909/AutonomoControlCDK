@@ -1,9 +1,13 @@
-import * as cdk from 'aws-cdk-lib/core';
+import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import { AutonomoControlCdkStack } from './autonomo_control_cdk-stack';
+import {
+  AutonomoControlCdkStack,
+  AutonomoControlCdkStackProps,
+} from './autonomo_control_cdk-stack';
 
 export interface AutonomoControlStageProps extends cdk.StageProps {
   stageName: string;
+  tableNamePrefix: string;
 }
 
 export class AutonomoControlStage extends cdk.Stage {
@@ -12,8 +16,16 @@ export class AutonomoControlStage extends cdk.Stage {
 
     cdk.Tags.of(this).add('Stage', props.stageName);
 
-    new AutonomoControlCdkStack(this, `AutonomoControlCdkStack-${props.stageName}`, {
+    const stackProps: AutonomoControlCdkStackProps = {
       env: props.env,
-    });
+      stageName: props.stageName,
+      tableNamePrefix: props.tableNamePrefix,
+    };
+
+    new AutonomoControlCdkStack(
+      this,
+      `AutonomoControlCdkStack-${props.stageName}`,
+      stackProps,
+    );
   }
 }

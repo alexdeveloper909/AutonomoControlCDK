@@ -1,8 +1,12 @@
 #!/usr/bin/env node
-import * as cdk from 'aws-cdk-lib/core';
+import * as cdk from 'aws-cdk-lib';
 import { AutonomoControlStage } from '../lib/autonomo_control_cdk-stage';
 
 const app = new cdk.App();
+const tableNamePrefix =
+  app.node.tryGetContext('tableNamePrefix') ??
+  process.env.TABLE_NAME_PREFIX ??
+  'autonomo-control';
 
 const defaultEnv = {
   account: process.env.CDK_DEFAULT_ACCOUNT,
@@ -25,5 +29,13 @@ const prodEnv = {
   region: prodContext?.region ?? defaultEnv.region,
 };
 
-new AutonomoControlStage(app, 'Dev', { stageName: 'dev', env: devEnv });
-new AutonomoControlStage(app, 'Prod', { stageName: 'prod', env: prodEnv });
+new AutonomoControlStage(app, 'Dev', {
+  stageName: 'dev',
+  env: devEnv,
+  tableNamePrefix,
+});
+new AutonomoControlStage(app, 'Prod', {
+  stageName: 'prod',
+  env: prodEnv,
+  tableNamePrefix,
+});
