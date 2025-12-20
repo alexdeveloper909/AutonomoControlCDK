@@ -28,7 +28,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       partitionKey: { name: 'user_id', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecovery: isProd,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: isProd },
       removalPolicy,
     });
     this.usersTable.addGlobalSecondaryIndex({
@@ -47,7 +47,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       partitionKey: { name: 'workspace_id', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecovery: isProd,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: isProd },
       removalPolicy,
     });
     this.workspacesTable.addGlobalSecondaryIndex({
@@ -63,7 +63,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       sortKey: { name: 'member_key', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecovery: isProd,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: isProd },
       removalPolicy,
     });
     this.workspaceMembersTable.addGlobalSecondaryIndex({
@@ -85,7 +85,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       sortKey: { name: 'record_key', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecovery: isProd,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: isProd },
       removalPolicy,
     });
     this.workspaceRecordsTable.addGlobalSecondaryIndex({
@@ -106,7 +106,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       partitionKey: { name: 'workspace_id', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecovery: isProd,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: isProd },
       removalPolicy,
     });
 
