@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
 import { AutonomoControlStage } from '../lib/autonomo_control_cdk-stage';
+import { AutonomoControlCodeArtifactStack } from '../lib/autonomo_control_codeartifact-stack';
 
 const app = new cdk.App();
 const tableNamePrefix =
@@ -28,6 +29,10 @@ const prodEnv = {
   account: prodContext?.account ?? defaultEnv.account,
   region: prodContext?.region ?? defaultEnv.region,
 };
+const sharedEnv = {
+  account: app.node.tryGetContext('shared.account') ?? defaultEnv.account,
+  region: app.node.tryGetContext('shared.region') ?? defaultEnv.region,
+};
 
 new AutonomoControlStage(app, 'Dev', {
   stageName: 'dev',
@@ -38,4 +43,11 @@ new AutonomoControlStage(app, 'Prod', {
   stageName: 'prod',
   env: prodEnv,
   tableNamePrefix,
+});
+
+new AutonomoControlCodeArtifactStack(app, 'AutonomoControlCodeArtifact', {
+  env: sharedEnv,
+  domainName: 'tokarevalex',
+  repositoryName: 'AutonomoControlCore',
+  repositoryDescription: 'Kotlin domain layer for AutonomoControl.',
 });

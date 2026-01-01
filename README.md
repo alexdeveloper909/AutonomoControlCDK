@@ -11,6 +11,18 @@ deploys its own stack (`AutonomoControlCdkStack-dev` and `AutonomoControlCdkStac
 resources with `Stage=dev` or `Stage=prod`. You can override the target account/region per stage via
 CDK context.
 
+## CodeArtifact (shared)
+
+This app provisions a shared CodeArtifact domain and repository for both stages:
+
+- **Domain**: `tokarevalex`
+- **Repository**: `AutonomoControlCore`
+- **Description**: `Kotlin domain layer for AutonomoControl.`
+
+The repository stack is deployed once per app (not per stage). Override its account/region via:
+
+* `npx cdk deploy AutonomoControlCodeArtifact -c shared.account=123456789012 -c shared.region=us-east-1`
+
 ## DynamoDB persistence
 
 This stack provisions DynamoDB tables for users, workspaces, workspace members, workspace records,
