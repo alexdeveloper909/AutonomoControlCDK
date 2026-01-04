@@ -8,6 +8,7 @@ import {
 export interface AutonomoControlStageProps extends cdk.StageProps {
   stageName: string;
   tableNamePrefix: string;
+  artifactBucketName: string;
 }
 
 export class AutonomoControlStage extends cdk.Stage {
@@ -20,6 +21,7 @@ export class AutonomoControlStage extends cdk.Stage {
       env: props.env,
       stageName: props.stageName,
       tableNamePrefix: props.tableNamePrefix,
+      artifactBucketName: props.artifactBucketName,
     };
 
     new AutonomoControlCdkStack(

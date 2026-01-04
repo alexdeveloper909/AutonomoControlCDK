@@ -1,11 +1,13 @@
 import * as cdk from 'aws-cdk-lib';
 import { CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
 export interface AutonomoControlCdkStackProps extends cdk.StackProps {
   stageName: string;
   tableNamePrefix: string;
+  artifactBucketName: string;
 }
 
 export class AutonomoControlCdkStack extends cdk.Stack {
@@ -14,6 +16,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
   public readonly workspaceMembersTable: dynamodb.Table;
   public readonly workspaceRecordsTable: dynamodb.Table;
   public readonly workspaceSettingsTable: dynamodb.Table;
+  public readonly artifactBucket: s3.IBucket;
 
   constructor(scope: Construct, id: string, props: AutonomoControlCdkStackProps) {
     super(scope, id, props);
@@ -110,6 +113,12 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       removalPolicy,
     });
 
+    this.artifactBucket = s3.Bucket.fromBucketName(
+      this,
+      'AutonomoControlApiArtifactBucket',
+      props.artifactBucketName,
+    );
+
     new CfnOutput(this, 'UsersTableName', { value: this.usersTable.tableName });
     new CfnOutput(this, 'WorkspacesTableName', {
       value: this.workspacesTable.tableName,
@@ -122,6 +131,9 @@ export class AutonomoControlCdkStack extends cdk.Stack {
     });
     new CfnOutput(this, 'WorkspaceSettingsTableName', {
       value: this.workspaceSettingsTable.tableName,
+    });
+    new CfnOutput(this, 'AutonomoControlApiArtifactBucketName', {
+      value: this.artifactBucket.bucketName,
     });
   }
 }

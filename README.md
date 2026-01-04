@@ -11,11 +11,22 @@ deploys its own stack (`AutonomoControlCdkStack-dev` and `AutonomoControlCdkStac
 resources with `Stage=dev` or `Stage=prod`. You can override the target account/region per stage via
 CDK context.
 
+## Shared S3 artifact bucket (autonomo-control-api)
+
+This app also defines a shared stack (`AutonomoControlSharedStack`) that provisions a single S3
+bucket used to store the `autonomo-control-api` Lambda artifact. The bucket name is the same for
+both Dev and Prod (it does not include the stage name).
+
+- Bucket name: `autonomo-control-api-artifacts-<account>-<region>`
+- Override the shared stack env (only if Dev/Prod differ): `-c shared.account=... -c shared.region=...`
+- SSM parameter created: `/autonomo-control/autonomo-control-api/artifact-bucket-name`
+
 The actual deployable stack names include the stage prefix. To see them:
 
 * `npx cdk list`
   * `Dev/AutonomoControlCdkStack-dev`
   * `Prod/AutonomoControlCdkStack-prod`
+  * `AutonomoControlSharedStack`
 
 ## DynamoDB persistence
 
@@ -97,6 +108,7 @@ One settings item per workspace.
 * `npm run watch`   watch for changes and compile
 * `npm run test`    perform the jest unit tests
 * `npx cdk list`    list available stacks
+* `npx cdk deploy AutonomoControlSharedStack --profile tokarevalex` deploy the shared artifact bucket (run once)
 * `npx cdk deploy "Dev/*" --profile tokarevalex`   deploy the dev stage (our default region is `eu-west-1`)
 * `npx cdk deploy "Prod/*" --profile tokarevalex`  deploy the prod stage (our default region is `eu-west-1`)
 * `npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile tokarevalex`   deploy only the dev stack
