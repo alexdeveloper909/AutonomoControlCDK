@@ -77,6 +77,20 @@ One settings item per workspace.
 - **PK**: `workspace_id` (string)
 - **Attributes**: `year`, `start_date`, `iva_std`, `irpf_rate`, `obligacion130`, `opening_balance`, `expense_categories`, ...
 
+# dynamodb table names on dev stage
+- autonomo-control-dev-users
+- autonomo-control-dev-workspace_members
+- autonomo-control-dev-workspace_records
+- autonomo-control-dev-workspace_settings
+- autonomo-control-dev-workspaces
+
+# dynamodb table names on prod stage
+- autonomo-control-prod-users
+- autonomo-control-prod-workspace_members
+- autonomo-control-prod-workspace_records
+- autonomo-control-prod-workspace_settings
+- autonomo-control-prod-workspaces
+
 ## Useful commands
 
 * `npm run build`   compile typescript to js
