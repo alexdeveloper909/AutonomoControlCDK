@@ -11,6 +11,12 @@ deploys its own stack (`AutonomoControlCdkStack-dev` and `AutonomoControlCdkStac
 resources with `Stage=dev` or `Stage=prod`. You can override the target account/region per stage via
 CDK context.
 
+The actual deployable stack names include the stage prefix. To see them:
+
+* `npx cdk list`
+  * `Dev/AutonomoControlCdkStack-dev`
+  * `Prod/AutonomoControlCdkStack-prod`
+
 ## DynamoDB persistence
 
 This stack provisions DynamoDB tables for users, workspaces, workspace members, workspace records,
@@ -76,9 +82,16 @@ One settings item per workspace.
 * `npm run build`   compile typescript to js
 * `npm run watch`   watch for changes and compile
 * `npm run test`    perform the jest unit tests
-* `npx cdk deploy Dev`   deploy the dev stage
-* `npx cdk deploy Prod`  deploy the prod stage
-* `npx cdk deploy Dev -c dev.account=123456789012 -c dev.region=us-east-1`   override dev env
-* `npx cdk deploy Prod -c prod.account=123456789012 -c prod.region=us-east-1` override prod env
+* `npx cdk list`    list available stacks
+* `npx cdk deploy "Dev/*" --profile tokarevalex`   deploy the dev stage (our default region is `eu-west-1`)
+* `npx cdk deploy "Prod/*" --profile tokarevalex`  deploy the prod stage (our default region is `eu-west-1`)
+* `npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile tokarevalex`   deploy only the dev stack
+* `npx cdk deploy "Prod/AutonomoControlCdkStack-prod" --profile tokarevalex` deploy only the prod stack
+* `npx cdk deploy "Dev/*" -c dev.account=725601752375 -c dev.region=eu-west-1`   override dev env (our AWS account/region)
+* `npx cdk deploy "Prod/*" -c prod.account=725601752375 -c prod.region=eu-west-1` override prod env (our AWS account/region)
 * `npx cdk diff`    compare deployed stack with current state
 * `npx cdk synth`   emits the synthesized CloudFormation template
+
+If you see CDK CLI notices (telemetry / Node support), they are informational. To silence them:
+* `npx cdk acknowledge 34892`
+* `npx cdk acknowledge 34635`
