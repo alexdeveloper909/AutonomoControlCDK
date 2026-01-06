@@ -135,7 +135,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
     const googleClientIdParam = new cdk.CfnParameter(this, 'GoogleClientId', {
       type: 'String',
       description: 'Google OAuth client id (for Cognito Google IdP).',
-      default: props.googleClientId,
+      default: props.googleClientId ?? '',
     });
     const googleClientSecretNameParam = new cdk.CfnParameter(
       this,
@@ -144,7 +144,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
         type: 'String',
         description:
           'AWS Secrets Manager secret name containing the Google OAuth client secret as a plaintext SecretString.',
-        default: props.googleClientSecretName,
+        default: props.googleClientSecretName ?? '',
       },
     );
     const oauthCallbackUrlsParam = new cdk.CfnParameter(this, 'OAuthCallbackUrls', {
@@ -179,7 +179,21 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       cognitoDomain: { domainPrefix: userPoolDomainPrefix },
     });
 
-    const userPoolClient = userPool.addClient('UserPoolClient', {
+    const enableGoogleIdpCondition = new cdk.CfnCondition(this, 'EnableGoogleIdp', {
+      expression: cdk.Fn.conditionAnd(
+        cdk.Fn.conditionNot(
+          cdk.Fn.conditionEquals(googleClientIdParam.valueAsString, ''),
+        ),
+        cdk.Fn.conditionNot(
+          cdk.Fn.conditionEquals(googleClientSecretNameParam.valueAsString, ''),
+        ),
+      ),
+    });
+    const disableGoogleIdpCondition = new cdk.CfnCondition(this, 'DisableGoogleIdp', {
+      expression: cdk.Fn.conditionNot(enableGoogleIdpCondition),
+    });
+
+    const userPoolClientCognitoOnly = userPool.addClient('UserPoolClientCognitoOnly', {
       userPoolClientName: `autonomo-control-${props.stageName}-web`,
       generateSecret: false,
       oAuth: {
@@ -192,8 +206,33 @@ export class AutonomoControlCdkStack extends cdk.Stack {
         callbackUrls: oauthCallbackUrlsParam.valueAsList,
         logoutUrls: oauthLogoutUrlsParam.valueAsList,
       },
-      supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.GOOGLE],
+      supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.COGNITO],
     });
+    const cfnUserPoolClientCognitoOnly =
+      userPoolClientCognitoOnly.node.defaultChild as cognito.CfnUserPoolClient;
+    cfnUserPoolClientCognitoOnly.cfnOptions.condition = disableGoogleIdpCondition;
+
+    const userPoolClientWithGoogle = userPool.addClient('UserPoolClientWithGoogle', {
+      userPoolClientName: `autonomo-control-${props.stageName}-web`,
+      generateSecret: false,
+      oAuth: {
+        flows: { authorizationCodeGrant: true },
+        scopes: [
+          cognito.OAuthScope.OPENID,
+          cognito.OAuthScope.EMAIL,
+          cognito.OAuthScope.PROFILE,
+        ],
+        callbackUrls: oauthCallbackUrlsParam.valueAsList,
+        logoutUrls: oauthLogoutUrlsParam.valueAsList,
+      },
+      supportedIdentityProviders: [
+        cognito.UserPoolClientIdentityProvider.COGNITO,
+        cognito.UserPoolClientIdentityProvider.GOOGLE,
+      ],
+    });
+    const cfnUserPoolClientWithGoogle =
+      userPoolClientWithGoogle.node.defaultChild as cognito.CfnUserPoolClient;
+    cfnUserPoolClientWithGoogle.cfnOptions.condition = enableGoogleIdpCondition;
 
     const googleClientSecret = secretsmanager.Secret.fromSecretNameV2(
       this,
@@ -216,7 +255,10 @@ export class AutonomoControlCdkStack extends cdk.Stack {
         },
       },
     );
-    userPoolClient.node.addDependency(googleProvider);
+
+    const cfnGoogleProvider = googleProvider.node.defaultChild as cognito.CfnUserPoolIdentityProvider;
+    cfnGoogleProvider.cfnOptions.condition = enableGoogleIdpCondition;
+    userPoolClientWithGoogle.node.addDependency(googleProvider);
 
     const apiLambda = new lambda.Function(this, 'AutonomoControlApiLambda', {
       functionName: `autonomo-control-api-${props.stageName}`,
@@ -251,15 +293,20 @@ export class AutonomoControlCdkStack extends cdk.Stack {
     });
 
     const jwtIssuer = `https://cognito-idp.${cdk.Aws.REGION}.amazonaws.com/${userPool.userPoolId}`;
+    const jwtAudience = cdk.Fn.conditionIf(
+      enableGoogleIdpCondition.logicalId,
+      userPoolClientWithGoogle.userPoolClientId,
+      userPoolClientCognitoOnly.userPoolClientId,
+    ) as unknown as string;
     const jwtAuthorizer = new apigwv2Authorizers.HttpJwtAuthorizer(
       'CognitoJwtAuthorizer',
       jwtIssuer,
-      { jwtAudience: [userPoolClient.userPoolClientId] },
+      { jwtAudience: [jwtAudience] },
     );
 
     new CfnOutput(this, 'CognitoJwtIssuer', { value: jwtIssuer });
     new CfnOutput(this, 'CognitoJwtAudience', {
-      value: userPoolClient.userPoolClientId,
+      value: jwtAudience,
     });
 
     const integration = new apigwv2Integrations.HttpLambdaIntegration(
@@ -298,7 +345,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
     });
     new CfnOutput(this, 'CognitoUserPoolId', { value: userPool.userPoolId });
     new CfnOutput(this, 'CognitoUserPoolClientId', {
-      value: userPoolClient.userPoolClientId,
+      value: jwtAudience,
     });
     new CfnOutput(this, 'CognitoDomain', { value: userPoolDomain.baseUrl() });
     new CfnOutput(this, 'CognitoGoogleIdpRedirectUri', {

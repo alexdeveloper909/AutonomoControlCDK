@@ -55,7 +55,12 @@ Each stage creates its own Cognito User Pool, User Pool Client, and User Pool Do
 logging into both dev and prod with the same Google account while keeping completely separate user
 pool users (and therefore separate app data per stage).
 
-You must configure Google OAuth and pass the settings to each stack:
+Google OAuth is optional. The stack will deploy the User Pool + Domain without Google configured so
+you can obtain the Cognito domain first (needed to configure the OAuth client in Google Cloud
+Console). Google IdP resources are only created when **both** `GoogleClientId` and
+`GoogleClientSecretName` are non-empty.
+
+To enable Google OAuth, pass the settings to each stack:
 
 - `GoogleClientId` (OAuth client id)
 - `GoogleClientSecretName` (Secrets Manager secret name containing the OAuth client secret as a
@@ -72,6 +77,13 @@ vars (so they become parameter defaults at synth time):
   `OAUTH_LOGOUT_URLS_DEV`, `CORS_ALLOW_ORIGINS_DEV`
 - Prod: `GOOGLE_CLIENT_ID_PROD`, `GOOGLE_CLIENT_SECRET_NAME_PROD`, `OAUTH_CALLBACK_URLS_PROD`,
   `OAUTH_LOGOUT_URLS_PROD`, `CORS_ALLOW_ORIGINS_PROD`
+
+Bootstrap flow (no Google yet):
+
+- Deploy without setting `GoogleClientId` / `GoogleClientSecretName`
+- Read the stack output `CognitoDomain` (and/or `CognitoGoogleIdpRedirectUri`)
+- Create/configure the Google OAuth client, then store the client secret in Secrets Manager
+- Re-deploy with `GOOGLE_CLIENT_ID(_DEV|_PROD)` and `GOOGLE_CLIENT_SECRET_NAME(_DEV|_PROD)`
 
 Important: in Google Cloud Console, add the Cognito redirect URI(s) (one per stage):
 
