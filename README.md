@@ -28,6 +28,61 @@ The actual deployable stack names include the stage prefix. To see them:
   * `Prod/AutonomoControlCdkStack-prod`
   * `AutonomoControlSharedStack`
 
+## Lambda API + HTTP API (dev/prod)
+
+Each stage stack now provisions:
+
+- A Java 17 Lambda function (handler: `autonomo.handler.RecordsLambda`) using the artifact stored in the
+  shared S3 bucket under `autonomo-control-api/<version>/app.zip`.
+- An API Gateway HTTP API (`$default` route) integrated with the Lambda.
+
+You can deploy different Lambda artifact versions to dev and prod (e.g. test newer versions on dev):
+
+- Global default: `API_ARTIFACT_VERSION=0.0.1` or `-c apiArtifactVersion=0.0.1`
+- Dev override: `-c devApiArtifactVersion=0.0.1`
+- Prod override: `-c prodApiArtifactVersion=0.0.1`
+
+Lambda environment variables are set per stage:
+
+- `ENV=dev|prod`
+- `DDB_TABLE_PREFIX=<tableNamePrefix>-<stage>` (so the Lambda uses the correct DynamoDB tables)
+
+After deployment, see CloudFormation outputs for each stack (API URL, Cognito IDs, etc.).
+
+## Cognito User Pool + Google IdP (dev/prod)
+
+Each stage creates its own Cognito User Pool, User Pool Client, and User Pool Domain. This allows
+logging into both dev and prod with the same Google account while keeping completely separate user
+pool users (and therefore separate app data per stage).
+
+You must configure Google OAuth and pass the settings to each stack:
+
+- `GoogleClientId` (OAuth client id)
+- `GoogleClientSecretName` (Secrets Manager secret name containing the OAuth client secret as a
+  plaintext `SecretString`)
+- `OAuthCallbackUrls`, `OAuthLogoutUrls` (comma-separated lists)
+- `CorsAllowOrigins` (comma-separated list)
+
+You can provide these either as CloudFormation parameters at deploy time, or via CDK context / env
+vars (so they become parameter defaults at synth time):
+
+- Global: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET_NAME`, `OAUTH_CALLBACK_URLS`, `OAUTH_LOGOUT_URLS`,
+  `CORS_ALLOW_ORIGINS`
+- Dev: `GOOGLE_CLIENT_ID_DEV`, `GOOGLE_CLIENT_SECRET_NAME_DEV`, `OAUTH_CALLBACK_URLS_DEV`,
+  `OAUTH_LOGOUT_URLS_DEV`, `CORS_ALLOW_ORIGINS_DEV`
+- Prod: `GOOGLE_CLIENT_ID_PROD`, `GOOGLE_CLIENT_SECRET_NAME_PROD`, `OAUTH_CALLBACK_URLS_PROD`,
+  `OAUTH_LOGOUT_URLS_PROD`, `CORS_ALLOW_ORIGINS_PROD`
+
+Important: in Google Cloud Console, add the Cognito redirect URI(s) (one per stage):
+
+- `https://<your-domain>.auth.<region>.amazoncognito.com/oauth2/idpresponse`
+
+This value is also exported as `CognitoGoogleIdpRedirectUri` from each stack.
+
+API Gateway uses a JWT authorizer configured for the stage's Cognito User Pool. Call the API with:
+
+- `Authorization: Bearer <id_token>`
+
 ## DynamoDB persistence
 
 This stack provisions DynamoDB tables for users, workspaces, workspace members, workspace records,
@@ -115,6 +170,8 @@ One settings item per workspace.
 * `npx cdk deploy "Prod/AutonomoControlCdkStack-prod" --profile tokarevalex` deploy only the prod stack
 * `npx cdk deploy "Dev/*" -c dev.account=725601752375 -c dev.region=eu-west-1`   override dev env (our AWS account/region)
 * `npx cdk deploy "Prod/*" -c prod.account=725601752375 -c prod.region=eu-west-1` override prod env (our AWS account/region)
+* `npx cdk deploy "Dev/*" -c devApiArtifactVersion=0.0.1` deploy dev with a specific API artifact version
+* `npx cdk deploy "Prod/*" -c prodApiArtifactVersion=0.0.1` deploy prod with a specific API artifact version
 * `npx cdk diff`    compare deployed stack with current state
 * `npx cdk synth`   emits the synthesized CloudFormation template
 

@@ -9,6 +9,13 @@ export interface AutonomoControlStageProps extends cdk.StageProps {
   stageName: string;
   tableNamePrefix: string;
   artifactBucketName: string;
+  apiArtifactVersion: string;
+  googleClientId?: string;
+  googleClientSecretName?: string;
+  oauthCallbackUrls?: string[];
+  oauthLogoutUrls?: string[];
+  corsAllowOrigins?: string[];
+  userPoolDomainPrefix?: string;
 }
 
 export class AutonomoControlStage extends cdk.Stage {
@@ -22,6 +29,13 @@ export class AutonomoControlStage extends cdk.Stage {
       stageName: props.stageName,
       tableNamePrefix: props.tableNamePrefix,
       artifactBucketName: props.artifactBucketName,
+      apiArtifactVersion: props.apiArtifactVersion,
+      googleClientId: props.googleClientId,
+      googleClientSecretName: props.googleClientSecretName,
+      oauthCallbackUrls: props.oauthCallbackUrls,
+      oauthLogoutUrls: props.oauthLogoutUrls,
+      corsAllowOrigins: props.corsAllowOrigins,
+      userPoolDomainPrefix: props.userPoolDomainPrefix,
     };
 
     new AutonomoControlCdkStack(

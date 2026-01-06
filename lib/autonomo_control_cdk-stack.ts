@@ -1,6 +1,12 @@
 import * as cdk from 'aws-cdk-lib';
-import { CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
+import { CfnOutput, Duration, RemovalPolicy } from 'aws-cdk-lib';
+import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2';
+import * as apigwv2Authorizers from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
+import * as apigwv2Integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
@@ -8,6 +14,13 @@ export interface AutonomoControlCdkStackProps extends cdk.StackProps {
   stageName: string;
   tableNamePrefix: string;
   artifactBucketName: string;
+  apiArtifactVersion: string;
+  googleClientId?: string;
+  googleClientSecretName?: string;
+  oauthCallbackUrls?: string[];
+  oauthLogoutUrls?: string[];
+  corsAllowOrigins?: string[];
+  userPoolDomainPrefix?: string;
 }
 
 export class AutonomoControlCdkStack extends cdk.Stack {
@@ -119,6 +132,148 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       props.artifactBucketName,
     );
 
+    const googleClientIdParam = new cdk.CfnParameter(this, 'GoogleClientId', {
+      type: 'String',
+      description: 'Google OAuth client id (for Cognito Google IdP).',
+      default: props.googleClientId,
+    });
+    const googleClientSecretNameParam = new cdk.CfnParameter(
+      this,
+      'GoogleClientSecretName',
+      {
+        type: 'String',
+        description:
+          'AWS Secrets Manager secret name containing the Google OAuth client secret as a plaintext SecretString.',
+        default: props.googleClientSecretName,
+      },
+    );
+    const oauthCallbackUrlsParam = new cdk.CfnParameter(this, 'OAuthCallbackUrls', {
+      type: 'CommaDelimitedList',
+      description:
+        'Allowed OAuth callback URLs for the Cognito App Client (comma separated).',
+      default:
+        props.oauthCallbackUrls?.join(',') ?? 'http://localhost:3000/auth/callback',
+    });
+    const oauthLogoutUrlsParam = new cdk.CfnParameter(this, 'OAuthLogoutUrls', {
+      type: 'CommaDelimitedList',
+      description: 'Allowed logout URLs for the Cognito App Client (comma separated).',
+      default: props.oauthLogoutUrls?.join(',') ?? 'http://localhost:3000/',
+    });
+    const corsAllowOriginsParam = new cdk.CfnParameter(this, 'CorsAllowOrigins', {
+      type: 'CommaDelimitedList',
+      description: 'CORS allow origins for the HTTP API (comma separated).',
+      default: props.corsAllowOrigins?.join(',') ?? 'http://localhost:3000',
+    });
+
+    const userPool = new cognito.UserPool(this, 'UserPool', {
+      userPoolName: `autonomo-control-${props.stageName}`,
+      signInAliases: { email: true },
+      selfSignUpEnabled: false,
+      removalPolicy,
+    });
+
+    const userPoolDomainPrefix =
+      props.userPoolDomainPrefix ??
+      `autonomo-control-${props.stageName}-${cdk.Aws.ACCOUNT_ID}`;
+    const userPoolDomain = userPool.addDomain('UserPoolDomain', {
+      cognitoDomain: { domainPrefix: userPoolDomainPrefix },
+    });
+
+    const userPoolClient = userPool.addClient('UserPoolClient', {
+      userPoolClientName: `autonomo-control-${props.stageName}-web`,
+      generateSecret: false,
+      oAuth: {
+        flows: { authorizationCodeGrant: true },
+        scopes: [
+          cognito.OAuthScope.OPENID,
+          cognito.OAuthScope.EMAIL,
+          cognito.OAuthScope.PROFILE,
+        ],
+        callbackUrls: oauthCallbackUrlsParam.valueAsList,
+        logoutUrls: oauthLogoutUrlsParam.valueAsList,
+      },
+      supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.GOOGLE],
+    });
+
+    const googleClientSecret = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      'GoogleClientSecret',
+      googleClientSecretNameParam.valueAsString,
+    );
+
+    const googleProvider = new cognito.UserPoolIdentityProviderGoogle(
+      this,
+      'GoogleProvider',
+      {
+        userPool,
+        clientId: googleClientIdParam.valueAsString,
+        clientSecretValue: googleClientSecret.secretValue,
+        scopes: ['openid', 'email', 'profile'],
+        attributeMapping: {
+          email: cognito.ProviderAttribute.GOOGLE_EMAIL,
+          givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
+          familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
+        },
+      },
+    );
+    userPoolClient.node.addDependency(googleProvider);
+
+    const apiLambda = new lambda.Function(this, 'AutonomoControlApiLambda', {
+      functionName: `autonomo-control-api-${props.stageName}`,
+      runtime: lambda.Runtime.JAVA_17,
+      handler: 'autonomo.handler.RecordsLambda',
+      code: lambda.Code.fromBucket(
+        this.artifactBucket,
+        `autonomo-control-api/${props.apiArtifactVersion}/app.zip`,
+      ),
+      memorySize: 1024,
+      timeout: Duration.seconds(30),
+      environment: {
+        ENV: props.stageName,
+        DDB_TABLE_PREFIX: `${props.tableNamePrefix}-${props.stageName}`,
+      },
+    });
+
+    this.usersTable.grantReadWriteData(apiLambda);
+    this.workspacesTable.grantReadWriteData(apiLambda);
+    this.workspaceMembersTable.grantReadWriteData(apiLambda);
+    this.workspaceRecordsTable.grantReadWriteData(apiLambda);
+    this.workspaceSettingsTable.grantReadWriteData(apiLambda);
+
+    const httpApi = new apigwv2.HttpApi(this, 'HttpApi', {
+      apiName: `autonomo-control-${props.stageName}`,
+      corsPreflight: {
+        allowCredentials: true,
+        allowHeaders: ['Authorization', 'Content-Type'],
+        allowMethods: [apigwv2.CorsHttpMethod.ANY],
+        allowOrigins: corsAllowOriginsParam.valueAsList,
+      },
+    });
+
+    const jwtIssuer = `https://cognito-idp.${cdk.Aws.REGION}.amazonaws.com/${userPool.userPoolId}`;
+    const jwtAuthorizer = new apigwv2Authorizers.HttpJwtAuthorizer(
+      'CognitoJwtAuthorizer',
+      jwtIssuer,
+      { jwtAudience: [userPoolClient.userPoolClientId] },
+    );
+
+    new CfnOutput(this, 'CognitoJwtIssuer', { value: jwtIssuer });
+    new CfnOutput(this, 'CognitoJwtAudience', {
+      value: userPoolClient.userPoolClientId,
+    });
+
+    const integration = new apigwv2Integrations.HttpLambdaIntegration(
+      'ApiLambdaIntegration',
+      apiLambda,
+    );
+
+    new apigwv2.HttpRoute(this, 'DefaultRoute', {
+      httpApi,
+      routeKey: apigwv2.HttpRouteKey.DEFAULT,
+      integration,
+      authorizer: jwtAuthorizer,
+    });
+
     new CfnOutput(this, 'UsersTableName', { value: this.usersTable.tableName });
     new CfnOutput(this, 'WorkspacesTableName', {
       value: this.workspacesTable.tableName,
@@ -134,6 +289,20 @@ export class AutonomoControlCdkStack extends cdk.Stack {
     });
     new CfnOutput(this, 'AutonomoControlApiArtifactBucketName', {
       value: this.artifactBucket.bucketName,
+    });
+
+    new CfnOutput(this, 'AutonomoControlApiLambdaName', { value: apiLambda.functionName });
+    new CfnOutput(this, 'AutonomoControlApiLambdaArn', { value: apiLambda.functionArn });
+    new CfnOutput(this, 'AutonomoControlApiUrl', {
+      value: httpApi.url ?? 'no-default-stage',
+    });
+    new CfnOutput(this, 'CognitoUserPoolId', { value: userPool.userPoolId });
+    new CfnOutput(this, 'CognitoUserPoolClientId', {
+      value: userPoolClient.userPoolClientId,
+    });
+    new CfnOutput(this, 'CognitoDomain', { value: userPoolDomain.baseUrl() });
+    new CfnOutput(this, 'CognitoGoogleIdpRedirectUri', {
+      value: `${userPoolDomain.baseUrl()}/oauth2/idpresponse`,
     });
   }
 }
