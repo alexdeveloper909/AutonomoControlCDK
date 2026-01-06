@@ -68,6 +68,16 @@ To enable Google OAuth, pass the settings to each stack:
 - `OAuthCallbackUrls`, `OAuthLogoutUrls` (comma-separated lists)
 - `CorsAllowOrigins` (comma-separated list)
 
+What these URLs/origins mean (usually you set them when you have a web frontend):
+
+- `OAuthCallbackUrls*`: Allowed redirect (callback) URLs after login. This must exactly match the
+  redirect URI your app uses to complete the OAuth flow (scheme/host/port/path), e.g.
+  `http://localhost:3000/auth/callback`.
+- `OAuthLogoutUrls*`: Allowed redirect URLs after logout, e.g. `http://localhost:3000/`.
+- `CorsAllowOrigins*`: Allowed *website origins* for browser calls to the HTTP API (CORS). This is
+  the origin only (scheme/host/port), not a browser name and not a path, e.g. `http://localhost:3000`
+  or `https://dev.example.com`. Multiple entries are comma-separated.
+
 You can provide these either as CloudFormation parameters at deploy time, or via CDK context / env
 vars (so they become parameter defaults at synth time):
 
@@ -186,6 +196,7 @@ One settings item per workspace.
 * `npx cdk deploy "Prod/*" -c prodApiArtifactVersion=0.0.1` deploy prod with a specific API artifact version
 * `npx cdk diff`    compare deployed stack with current state
 * `npx cdk synth`   emits the synthesized CloudFormation template
+* `npx cdk deploy "Dev/*" --profile tokarevalex --parameters "Dev/AutonomoControlCdkStack-dev:GoogleClientId=<GOOGLE_CLIENT_ID>" --parameters "Dev/AutonomoControlCdkStack-dev:GoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev"` Provide settings as CloudFormation parameters (explicit per deploy):
 
 If you see CDK CLI notices (telemetry / Node support), they are informational. To silence them:
 * `npx cdk acknowledge 34892`
