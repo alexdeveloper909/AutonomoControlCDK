@@ -60,6 +60,12 @@ you can obtain the Cognito domain first (needed to configure the OAuth client in
 Console). Google IdP resources are only created when **both** `GoogleClientId` and
 `GoogleClientSecretName` are non-empty.
 
+Note: the Cognito **App client secret** you see in the AWS Console is unrelated to the Google OAuth
+client secret. This stack creates a *public* User Pool app client (`generateSecret: false`), so the
+AWS Console will show an empty “Client secret” for `autonomo-control-*-web` even when Google OAuth is
+enabled. The Google client secret is read from Secrets Manager and applied to the **Identity
+provider (Google)** configuration instead.
+
 To enable Google OAuth, pass the settings to each stack:
 
 - `GoogleClientId` (OAuth client id)
