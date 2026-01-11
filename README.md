@@ -107,6 +107,76 @@ Important: in Google Cloud Console, add the Cognito redirect URI(s) (one per sta
 
 This value is also exported as `CognitoGoogleIdpRedirectUri` from each stack.
 
+### Step-by-step: Enabling Google OAuth (Dev example)
+
+**1. Deploy without Google (first time only)**
+
+```bash
+npx cdk deploy "Dev/*" --profile tokarevalex
+```
+
+Note the `CognitoDomain` and `CognitoGoogleIdpRedirectUri` outputs.
+
+**2. Create Google OAuth credentials**
+
+1. Go to [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials)
+2. Create a new **OAuth 2.0 Client ID** (Web application)
+3. Add **Authorized redirect URI**: use the `CognitoGoogleIdpRedirectUri` output, e.g.:
+   ```
+   https://autonomo-control-dev-<account>.auth.eu-west-1.amazoncognito.com/oauth2/idpresponse
+   ```
+4. Save the **Client ID** and **Client Secret**
+
+**3. Store the Google client secret in Secrets Manager**
+
+```bash
+aws secretsmanager create-secret \
+  --name "autonomo-control/google-oauth-client-secret-dev" \
+  --secret-string "YOUR_GOOGLE_CLIENT_SECRET" \
+  --profile tokarevalex \
+  --region eu-west-1
+```
+
+To update an existing secret:
+
+```bash
+aws secretsmanager put-secret-value \
+  --secret-id "autonomo-control/google-oauth-client-secret-dev" \
+  --secret-string "NEW_SECRET_VALUE" \
+  --profile tokarevalex \
+  --region eu-west-1
+```
+
+**4. Redeploy with Google OAuth enabled**
+
+**Important**: When enabling Google OAuth on an existing stack, you must pass values as BOTH CDK
+context (`-c`) AND CloudFormation `--parameters`. The context values configure the template during
+synthesis, while the parameters force CloudFormation to re-evaluate conditions and create the
+Google IdP resources.
+
+```bash
+npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile tokarevalex \
+  -c devGoogleClientId=YOUR_GOOGLE_CLIENT_ID \
+  -c devGoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev \
+  -c devOauthCallbackUrls=http://localhost:5173/auth/callback \
+  -c devOauthLogoutUrls=http://localhost:5173/ \
+  -c devCorsAllowOrigins=http://localhost:5173 \
+  --parameters GoogleClientId=YOUR_GOOGLE_CLIENT_ID \
+  --parameters GoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev \
+  --parameters OAuthCallbackUrls=http://localhost:5173/auth/callback \
+  --parameters OAuthLogoutUrls=http://localhost:5173/ \
+  --parameters CorsAllowOrigins=http://localhost:5173
+```
+
+For subsequent deploys (once Google is enabled), you can use just context or env vars.
+
+**5. Update web app configuration**
+
+After enabling Google OAuth, a **new Cognito User Pool Client** is created. Update your web app's
+`.env.local` with the new `CognitoUserPoolClientId` from the deployment outputs.
+
+For prod, use `prodGoogleClientId`, `prodGoogleClientSecretName`, etc. (or `GOOGLE_CLIENT_ID_PROD`, etc.).
+
 API Gateway uses a JWT authorizer configured for the stage's Cognito User Pool. Call the API with:
 
 - `Authorization: Bearer <id_token>`
@@ -202,7 +272,7 @@ One settings item per workspace.
 * `npx cdk deploy "Prod/*" -c prodApiArtifactVersion=0.0.1` deploy prod with a specific API artifact version
 * `npx cdk diff`    compare deployed stack with current state
 * `npx cdk synth`   emits the synthesized CloudFormation template
-* `npx cdk deploy "Dev/*" --profile tokarevalex --parameters "Dev/AutonomoControlCdkStack-dev:GoogleClientId=<GOOGLE_CLIENT_ID>" --parameters "Dev/AutonomoControlCdkStack-dev:GoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev"` Provide settings as CloudFormation parameters (explicit per deploy):
+* `npx cdk deploy "Dev/*" --profile tokarevalex -c devGoogleClientId=<GOOGLE_CLIENT_ID> -c devGoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev` Enable Google IdP via CDK context (required for conditional resources)
 
 If you see CDK CLI notices (telemetry / Node support), they are informational. To silence them:
 * `npx cdk acknowledge 34892`
