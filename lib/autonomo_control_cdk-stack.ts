@@ -314,12 +314,78 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       apiLambda,
     );
 
-    new apigwv2.HttpRoute(this, 'DefaultRoute', {
-      httpApi,
-      routeKey: apigwv2.HttpRouteKey.DEFAULT,
-      integration,
-      authorizer: jwtAuthorizer,
-    });
+    const addRoute = (id: string, method: apigwv2.HttpMethod, path: string, auth: boolean) =>
+      new apigwv2.HttpRoute(this, id, {
+        httpApi,
+        routeKey: apigwv2.HttpRouteKey.with(path, method),
+        integration,
+        authorizer: auth ? jwtAuthorizer : undefined,
+      });
+
+    // Public
+    addRoute('HealthRoute', apigwv2.HttpMethod.GET, '/health', false);
+
+    // Workspaces
+    addRoute('ListWorkspacesRoute', apigwv2.HttpMethod.GET, '/workspaces', true);
+    addRoute('CreateWorkspaceRoute', apigwv2.HttpMethod.POST, '/workspaces', true);
+    addRoute(
+      'GetWorkspaceSettingsRoute',
+      apigwv2.HttpMethod.GET,
+      '/workspaces/{workspaceId}/settings',
+      true,
+    );
+    addRoute(
+      'PutWorkspaceSettingsRoute',
+      apigwv2.HttpMethod.PUT,
+      '/workspaces/{workspaceId}/settings',
+      true,
+    );
+
+    // Records
+    addRoute(
+      'CreateRecordRoute',
+      apigwv2.HttpMethod.POST,
+      '/workspaces/{workspaceId}/records',
+      true,
+    );
+    addRoute(
+      'ListRecordsRoute',
+      apigwv2.HttpMethod.GET,
+      '/workspaces/{workspaceId}/records',
+      true,
+    );
+    addRoute(
+      'GetRecordRoute',
+      apigwv2.HttpMethod.GET,
+      '/workspaces/{workspaceId}/records/{recordType}/{eventDate}/{recordId}',
+      true,
+    );
+    addRoute(
+      'PutRecordRoute',
+      apigwv2.HttpMethod.PUT,
+      '/workspaces/{workspaceId}/records/{recordType}/{eventDate}/{recordId}',
+      true,
+    );
+    addRoute(
+      'DeleteRecordRoute',
+      apigwv2.HttpMethod.DELETE,
+      '/workspaces/{workspaceId}/records/{recordType}/{eventDate}/{recordId}',
+      true,
+    );
+
+    // Summaries
+    addRoute(
+      'MonthSummariesRoute',
+      apigwv2.HttpMethod.POST,
+      '/workspaces/{workspaceId}/summaries/months',
+      true,
+    );
+    addRoute(
+      'QuarterSummariesRoute',
+      apigwv2.HttpMethod.POST,
+      '/workspaces/{workspaceId}/summaries/quarters',
+      true,
+    );
 
     new CfnOutput(this, 'UsersTableName', { value: this.usersTable.tableName });
     new CfnOutput(this, 'WorkspacesTableName', {
