@@ -34,7 +34,13 @@ Each stage stack now provisions:
 
 - A Java 17 Lambda function (handler: `autonomo.handler.RecordsLambda`) using the artifact stored in the
   shared S3 bucket under `autonomo-control-api/<version>/app.zip`.
-- An API Gateway HTTP API (`$default` route) integrated with the Lambda.
+- An API Gateway HTTP API (explicit routes, no `$default` route) integrated with the Lambda.
+
+Route note:
+
+- The Lambda handler supports multiple paths internally, but API Gateway HTTP API v2 requires routes to be
+  declared up front. If you add a new backend endpoint, also add the corresponding route in
+  `lib/autonomo_control_cdk-stack.ts` (otherwise the path will return 404 and browser preflight may fail).
 
 You can deploy different Lambda artifact versions to dev and prod (e.g. test newer versions on dev):
 
