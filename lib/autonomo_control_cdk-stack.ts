@@ -3,9 +3,11 @@ import { CfnOutput, Duration, RemovalPolicy } from 'aws-cdk-lib';
 import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as apigwv2Authorizers from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
 import * as apigwv2Integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
@@ -260,8 +262,9 @@ export class AutonomoControlCdkStack extends cdk.Stack {
     cfnGoogleProvider.cfnOptions.condition = enableGoogleIdpCondition;
     userPoolClientWithGoogle.node.addDependency(googleProvider);
 
+    const apiLambdaName = `autonomo-control-api-${props.stageName}`;
     const apiLambda = new lambda.Function(this, 'AutonomoControlApiLambda', {
-      functionName: `autonomo-control-api-${props.stageName}`,
+      functionName: apiLambdaName,
       runtime: lambda.Runtime.JAVA_17,
       handler: 'autonomo.handler.RecordsLambda',
       code: lambda.Code.fromBucket(
@@ -270,6 +273,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       ),
       memorySize: 1024,
       timeout: Duration.seconds(30),
+      logRetention: logs.RetentionDays.ONE_MONTH,
       environment: {
         ENV: props.stageName,
         DDB_TABLE_PREFIX: `${props.tableNamePrefix}-${props.stageName}`,
@@ -387,6 +391,124 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       true,
     );
 
+    const errorsAlarm = new cloudwatch.Alarm(this, 'ApiLambdaErrorsAlarm', {
+      metric: apiLambda.metricErrors({
+        statistic: cloudwatch.Stats.SUM,
+        period: Duration.minutes(1),
+      }),
+      threshold: 0,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      evaluationPeriods: 1,
+      datapointsToAlarm: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+
+    const throttlesAlarm = new cloudwatch.Alarm(this, 'ApiLambdaThrottlesAlarm', {
+      metric: apiLambda.metricThrottles({
+        statistic: cloudwatch.Stats.SUM,
+        period: Duration.minutes(1),
+      }),
+      threshold: 0,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      evaluationPeriods: 1,
+      datapointsToAlarm: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+
+    const durationP95Ms = apiLambda
+      .metricDuration({ statistic: 'p95', period: Duration.minutes(5) })
+      .with({ unit: cloudwatch.Unit.MILLISECONDS });
+    const durationP95NearTimeoutAlarm = new cloudwatch.Alarm(
+      this,
+      'ApiLambdaDurationP95NearTimeoutAlarm',
+      {
+        metric: durationP95Ms,
+        threshold: apiLambda.timeout?.toMilliseconds()
+          ? apiLambda.timeout.toMilliseconds() * 0.9
+          : Duration.seconds(30).toMilliseconds() * 0.9,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        evaluationPeriods: 3,
+        datapointsToAlarm: 2,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      },
+    );
+
+    const serviceDashboard = new cloudwatch.Dashboard(this, 'ServiceDashboard', {
+      dashboardName: name('service-dashboard'),
+    });
+    serviceDashboard.addWidgets(
+      new cloudwatch.TextWidget({
+        width: 24,
+        height: 2,
+        markdown: `# Autonomo Control (${props.stageName})\n\nAPI Lambda: \`${apiLambda.functionName}\``,
+      }),
+      new cloudwatch.AlarmStatusWidget({
+        width: 24,
+        height: 4,
+        title: 'API Lambda alarms',
+        alarms: [errorsAlarm, throttlesAlarm, durationP95NearTimeoutAlarm],
+      }),
+      new cloudwatch.GraphWidget({
+        width: 12,
+        height: 6,
+        title: 'API Lambda requests',
+        left: [
+          apiLambda.metricInvocations({
+            statistic: cloudwatch.Stats.SUM,
+            period: Duration.minutes(5),
+          }),
+        ],
+      }),
+      new cloudwatch.GraphWidget({
+        width: 12,
+        height: 6,
+        title: 'API Lambda errors/throttles',
+        left: [
+          apiLambda.metricErrors({
+            statistic: cloudwatch.Stats.SUM,
+            period: Duration.minutes(5),
+          }),
+          apiLambda.metricThrottles({
+            statistic: cloudwatch.Stats.SUM,
+            period: Duration.minutes(5),
+          }),
+        ],
+      }),
+      new cloudwatch.GraphWidget({
+        width: 24,
+        height: 6,
+        title: 'API Lambda duration (p50/p95) with timeout',
+        left: [
+          apiLambda.metricDuration({
+            statistic: 'p50',
+            period: Duration.minutes(5),
+          }),
+          durationP95Ms,
+        ],
+        leftAnnotations: [
+          {
+            value: apiLambda.timeout?.toMilliseconds()
+              ? apiLambda.timeout.toMilliseconds()
+              : Duration.seconds(30).toMilliseconds(),
+            label: 'Timeout (ms)',
+          },
+        ],
+      }),
+      new cloudwatch.LogQueryWidget({
+        width: 24,
+        height: 6,
+        title: 'Recent API Lambda errors (logs insights)',
+        logGroupNames: [`/aws/lambda/${apiLambdaName}`],
+        view: cloudwatch.LogQueryVisualizationType.TABLE,
+        queryLines: [
+          'fields @timestamp, @message',
+          'filter @message like /(?i)(error|exception|fail)/',
+          'sort @timestamp desc',
+          'limit 50',
+        ],
+      }),
+    );
+
     new CfnOutput(this, 'UsersTableName', { value: this.usersTable.tableName });
     new CfnOutput(this, 'WorkspacesTableName', {
       value: this.workspacesTable.tableName,
@@ -406,6 +528,9 @@ export class AutonomoControlCdkStack extends cdk.Stack {
 
     new CfnOutput(this, 'AutonomoControlApiLambdaName', { value: apiLambda.functionName });
     new CfnOutput(this, 'AutonomoControlApiLambdaArn', { value: apiLambda.functionArn });
+    new CfnOutput(this, 'AutonomoControlServiceDashboardName', {
+      value: serviceDashboard.dashboardName,
+    });
     new CfnOutput(this, 'AutonomoControlApiUrl', {
       value: httpApi.url ?? 'no-default-stage',
     });

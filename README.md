@@ -55,6 +55,19 @@ Lambda environment variables are set per stage:
 
 After deployment, see CloudFormation outputs for each stack (API URL, Cognito IDs, etc.).
 
+## CloudWatch observability (Lambda)
+
+Each stage stack also configures basic CloudWatch observability for the API Lambda:
+
+- **Log retention**: sets the Lambda log group retention to **30 days** to avoid unbounded log storage.
+- **Alarms**:
+  - `Errors > 0`
+  - `Throttles > 0`
+  - `Duration p95` above **90% of the Lambda timeout**
+- **Service dashboard**: a single CloudWatch dashboard with key Lambda metrics, alarm status, and a Logs Insights query widget.
+
+After deployment, use the stack output `AutonomoControlServiceDashboardName` to find the dashboard in the CloudWatch console.
+
 ## Cognito User Pool + Google IdP (dev/prod)
 
 Each stage creates its own Cognito User Pool, User Pool Client, and User Pool Domain. This allows
