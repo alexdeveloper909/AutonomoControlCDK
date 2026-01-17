@@ -216,6 +216,9 @@ non-prod destroys on delete.
 - **GSI** `by_email`: PK `email`
 - **GSI** `by_google_sub`: PK `google_sub`
 
+The `users` table is populated automatically on the user's first successful login via a Cognito
+PostAuthentication trigger (idempotent write using the Cognito `sub` as `user_id`).
+
 ### 2) `workspaces`
 - **PK**: `workspace_id` (string)
 - **Attributes**: `name`, `owner_user_id`, `created_at`, ...

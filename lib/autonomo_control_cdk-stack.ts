@@ -8,6 +8,7 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as path from 'path';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
@@ -173,6 +174,26 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       selfSignUpEnabled: false,
       removalPolicy,
     });
+
+    const ensureUserOnLoginLambda = new lambda.Function(this, 'EnsureUserOnLoginLambda', {
+      functionName: `autonomo-control-ensure-user-on-login-${props.stageName}`,
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '..', 'lambda', 'cognito-ensure-user'),
+      ),
+      memorySize: 128,
+      timeout: Duration.seconds(5),
+      logRetention: logs.RetentionDays.ONE_WEEK,
+      environment: {
+        USERS_TABLE_NAME: this.usersTable.tableName,
+      },
+    });
+    this.usersTable.grantWriteData(ensureUserOnLoginLambda);
+    userPool.addTrigger(
+      cognito.UserPoolOperation.POST_AUTHENTICATION,
+      ensureUserOnLoginLambda,
+    );
 
     const userPoolDomainPrefix =
       props.userPoolDomainPrefix ??
