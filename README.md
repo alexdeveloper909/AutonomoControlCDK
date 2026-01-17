@@ -217,7 +217,7 @@ non-prod destroys on delete.
 - **GSI** `by_google_sub`: PK `google_sub`
 
 The `users` table is populated automatically on the user's first successful login via a Cognito
-PostAuthentication trigger (idempotent write using the Cognito `sub` as `user_id`).
+token-generation trigger (upsert keyed by the Cognito `sub` as `user_id`).
 
 ### 2) `workspaces`
 - **PK**: `workspace_id` (string)

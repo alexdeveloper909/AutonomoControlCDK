@@ -191,7 +191,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
     });
     this.usersTable.grantWriteData(ensureUserOnLoginLambda);
     userPool.addTrigger(
-      cognito.UserPoolOperation.POST_AUTHENTICATION,
+      cognito.UserPoolOperation.PRE_TOKEN_GENERATION,
       ensureUserOnLoginLambda,
     );
 

@@ -36,6 +36,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         print("Missing env var USERS_TABLE_NAME")
         return event
 
+    trigger_source = event.get("triggerSource")
+    if trigger_source == "TokenGeneration_RefreshTokens":
+        return event
+
     user_attributes = ((event.get("request") or {}).get("userAttributes") or {})
     user_id = user_attributes.get("sub")
     if not user_id:
@@ -66,25 +70,48 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         item["cognito_username"] = str(cognito_username)
 
     try:
-        _dynamodb.Table(table_name).put_item(
-            Item=item, ConditionExpression="attribute_not_exists(user_id)"
+        update_parts = [
+            "created_at = if_not_exists(created_at, :now)",
+            "updated_at = :now",
+        ]
+        expr_values: Dict[str, Any] = {":now": now}
+
+        if email:
+            update_parts.append("email = :email")
+            update_parts.append("email_lower = :email_lower")
+            expr_values[":email"] = str(email)
+            expr_values[":email_lower"] = str(email).lower()
+        if user_attributes.get("given_name"):
+            update_parts.append("given_name = :given_name")
+            expr_values[":given_name"] = str(user_attributes["given_name"])
+        if user_attributes.get("family_name"):
+            update_parts.append("family_name = :family_name")
+            expr_values[":family_name"] = str(user_attributes["family_name"])
+        if google_sub:
+            update_parts.append("google_sub = :google_sub")
+            expr_values[":google_sub"] = google_sub
+        if cognito_username:
+            update_parts.append("cognito_username = :cognito_username")
+            expr_values[":cognito_username"] = str(cognito_username)
+
+        _dynamodb.Table(table_name).update_item(
+            Key={"user_id": str(user_id)},
+            UpdateExpression="SET " + ", ".join(update_parts),
+            ExpressionAttributeValues=expr_values,
         )
     except ClientError as e:
-        if e.response.get("Error", {}).get("Code") == "ConditionalCheckFailedException":
-            return event
         print(
             "Failed to ensure user row in DynamoDB",
             {
                 "error": str(e),
                 "userId": str(user_id),
-                "triggerSource": event.get("triggerSource"),
+                "triggerSource": trigger_source,
             },
         )
     except Exception as e:
         print(
             "Failed to ensure user row in DynamoDB",
-            {"error": str(e), "userId": str(user_id), "triggerSource": event.get("triggerSource")},
+            {"error": str(e), "userId": str(user_id), "triggerSource": trigger_source},
         )
 
     return event
-
