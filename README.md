@@ -104,7 +104,23 @@ What these URLs/origins mean (usually you set them when you have a web frontend)
   or `https://dev.example.com`. Multiple entries are comma-separated.
 
 You can provide these either as CloudFormation parameters at deploy time, or via CDK context / env
-vars (so they become parameter defaults at synth time):
+vars (so they become parameter defaults at synth time).
+
+For convenience, this repo also supports local env files (not committed). The CDK app will load
+these automatically when it runs:
+
+- `.env.local` (shared)
+- `.env.dev.local` (dev overrides)
+- `.env.prod.local` (prod overrides)
+
+Templates you can copy:
+
+- `.env.dev.local.example` → `.env.dev.local`
+- `.env.prod.local.example` → `.env.prod.local`
+
+Tip: because both `.env.dev.local` and `.env.prod.local` may be loaded in the same synth process,
+prefer stage-suffixed keys (e.g. `GOOGLE_CLIENT_ID_DEV` / `GOOGLE_CLIENT_ID_PROD`) in the stage
+files to avoid collisions.
 
 - Global: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET_NAME`, `OAUTH_CALLBACK_URLS`, `OAUTH_LOGOUT_URLS`,
   `CORS_ALLOW_ORIGINS`
@@ -168,18 +184,29 @@ aws secretsmanager put-secret-value \
 
 **4. Redeploy with Google OAuth enabled**
 
-**Important**: When enabling Google OAuth on an existing stack, you must pass values as BOTH CDK
-context (`-c`) AND CloudFormation `--parameters`. The context values configure the template during
-synthesis, while the parameters force CloudFormation to re-evaluate conditions and create the
-Google IdP resources.
+When enabling Google OAuth on an **existing** stack, you have a few options. You do **not** need to
+duplicate values in both `-c` and `--parameters`.
+
+**Recommended (single source of truth): put values in `.env.dev.local` and use the helper script**
+
+This will load env vars and (on `deploy`) automatically pass the corresponding CloudFormation
+`--parameters` so you don’t have to type them.
+
+```bash
+npm run deploy:dev -- --profile tokarevalex
+```
+
+Why this matters: `cdk deploy` uses **previous stack parameter values** by default
+(`--previous-parameters` is `true`). That means changing a parameter *default* via `-c`/env vars
+does not update the stack’s stored parameter values unless you explicitly opt out of previous
+parameters for that deployment.
+
+**Option A (recommended): set CloudFormation parameters once**
+can
+This persists the values on the stack. Future deploys can omit these flags.
 
 ```bash
 npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile tokarevalex \
-  -c devGoogleClientId=YOUR_GOOGLE_CLIENT_ID \
-  -c devGoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev \
-  -c devOauthCallbackUrls=http://localhost:5173/auth/callback \
-  -c devOauthLogoutUrls=http://localhost:5173/ \
-  -c devCorsAllowOrigins=http://localhost:5173 \
   --parameters GoogleClientId=YOUR_GOOGLE_CLIENT_ID \
   --parameters GoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev \
   --parameters OAuthCallbackUrls=http://localhost:5173/auth/callback \
@@ -187,7 +214,23 @@ npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile tokarevalex \
   --parameters CorsAllowOrigins=http://localhost:5173
 ```
 
-For subsequent deploys (once Google is enabled), you can use just context or env vars.
+**Option B: use CDK context/env vars + `--no-previous-parameters` (no duplication)**
+
+Use this if you want to drive the parameter defaults from `-c` / env vars and force CloudFormation
+to apply those defaults on this deployment.
+
+```bash
+npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile tokarevalex --no-previous-parameters \
+  -c devGoogleClientId=YOUR_GOOGLE_CLIENT_ID \
+  -c devGoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev \
+  -c devOauthCallbackUrls=http://localhost:5173/auth/callback \
+  -c devOauthLogoutUrls=http://localhost:5173/ \
+  -c devCorsAllowOrigins=http://localhost:5173
+```
+
+After Google is enabled, future deploys can usually omit both `-c` and `--parameters` (CDK will
+reuse the stack’s previous parameter values). To change values later, pass `--parameters ...` again
+or use `--no-previous-parameters` when relying on new defaults.
 
 **5. Update web app configuration**
 
@@ -292,9 +335,12 @@ One settings item per workspace.
 * `npx cdk deploy "Prod/*" -c prod.account=725601752375 -c prod.region=eu-west-1` override prod env (our AWS account/region)
 * `npx cdk deploy "Dev/*" -c devApiArtifactVersion=0.0.1` deploy dev with a specific API artifact version
 * `npx cdk deploy "Prod/*" -c prodApiArtifactVersion=0.0.1` deploy prod with a specific API artifact version
+* `npm run deploy:dev -- --profile tokarevalex` deploy dev using `.env.dev.local` (auto `--parameters` on deploy)
+* `npm run deploy:prod -- --profile tokarevalex` deploy prod using `.env.prod.local` (auto `--parameters` on deploy)
 * `npx cdk diff`    compare deployed stack with current state
 * `npx cdk synth`   emits the synthesized CloudFormation template
-* `npx cdk deploy "Dev/*" --profile tokarevalex -c devGoogleClientId=<GOOGLE_CLIENT_ID> -c devGoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev` Enable Google IdP via CDK context (required for conditional resources)
+* `npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile tokarevalex --parameters GoogleClientId=<GOOGLE_CLIENT_ID> --parameters GoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev` Enable Google IdP (set once via stack parameters)
+* `npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile tokarevalex --no-previous-parameters -c devGoogleClientId=<GOOGLE_CLIENT_ID> -c devGoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev` Enable Google IdP via context (no duplicated values)
 
 If you see CDK CLI notices (telemetry / Node support), they are informational. To silence them:
 * `npx cdk acknowledge 34892`

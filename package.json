@@ -8,7 +8,11 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "cdk:dev": "node scripts/cdk-with-env.mjs dev",
+    "cdk:prod": "node scripts/cdk-with-env.mjs prod",
+    "deploy:dev": "node scripts/cdk-with-env.mjs dev deploy \"Dev/*\"",
+    "deploy:prod": "node scripts/cdk-with-env.mjs prod deploy \"Prod/*\""
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

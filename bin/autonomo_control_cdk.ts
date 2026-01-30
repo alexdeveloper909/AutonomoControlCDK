@@ -1,7 +1,44 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { AutonomoControlStage } from '../lib/autonomo_control_cdk-stage';
 import { AutonomoControlSharedStack } from '../lib/autonomo_control_shared-stack';
+
+function loadEnvFile(filePath: string): void {
+  const absPath = path.resolve(process.cwd(), filePath);
+  if (!fs.existsSync(absPath)) return;
+
+  const content = fs.readFileSync(absPath, 'utf8');
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (line.length === 0) continue;
+    if (line.startsWith('#')) continue;
+
+    const normalized = line.startsWith('export ') ? line.slice('export '.length) : line;
+    const equalsIdx = normalized.indexOf('=');
+    if (equalsIdx <= 0) continue;
+
+    const key = normalized.slice(0, equalsIdx).trim();
+    if (key.length === 0) continue;
+    if (process.env[key] !== undefined) continue; // do not override real env
+
+    let value = normalized.slice(equalsIdx + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    process.env[key] = value;
+  }
+}
+
+// Optional local config (not committed). Order matters; earlier values win.
+loadEnvFile('.env.local');
+loadEnvFile('.env.dev.local');
+loadEnvFile('.env.prod.local');
 
 const app = new cdk.App();
 const tableNamePrefix =
