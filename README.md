@@ -47,6 +47,7 @@ You can deploy different Lambda artifact versions to dev and prod (e.g. test new
 - Global default: `API_ARTIFACT_VERSION=0.0.1` or `-c apiArtifactVersion=0.0.1`
 - Dev override: `-c devApiArtifactVersion=0.0.1`
 - Prod override: `-c prodApiArtifactVersion=0.0.1`
+- Alternatively via env files: `API_ARTIFACT_VERSION_DEV=0.0.1` / `API_ARTIFACT_VERSION_PROD=0.0.1`
 
 Lambda environment variables are set per stage:
 
@@ -123,11 +124,11 @@ prefer stage-suffixed keys (e.g. `GOOGLE_CLIENT_ID_DEV` / `GOOGLE_CLIENT_ID_PROD
 files to avoid collisions.
 
 - Global: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET_NAME`, `OAUTH_CALLBACK_URLS`, `OAUTH_LOGOUT_URLS`,
-  `CORS_ALLOW_ORIGINS`
+  `CORS_ALLOW_ORIGINS`, `API_ARTIFACT_VERSION`
 - Dev: `GOOGLE_CLIENT_ID_DEV`, `GOOGLE_CLIENT_SECRET_NAME_DEV`, `OAUTH_CALLBACK_URLS_DEV`,
-  `OAUTH_LOGOUT_URLS_DEV`, `CORS_ALLOW_ORIGINS_DEV`
+  `OAUTH_LOGOUT_URLS_DEV`, `CORS_ALLOW_ORIGINS_DEV`, `API_ARTIFACT_VERSION_DEV`
 - Prod: `GOOGLE_CLIENT_ID_PROD`, `GOOGLE_CLIENT_SECRET_NAME_PROD`, `OAUTH_CALLBACK_URLS_PROD`,
-  `OAUTH_LOGOUT_URLS_PROD`, `CORS_ALLOW_ORIGINS_PROD`
+  `OAUTH_LOGOUT_URLS_PROD`, `CORS_ALLOW_ORIGINS_PROD`, `API_ARTIFACT_VERSION_PROD`
 
 Bootstrap flow (no Google yet):
 

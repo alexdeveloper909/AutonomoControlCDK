@@ -112,10 +112,12 @@ const defaultApiArtifactVersion =
 const devApiArtifactVersion =
   getContextString('dev', 'apiArtifactVersion') ??
   getContextString('devApiArtifactVersion') ??
+  process.env.API_ARTIFACT_VERSION_DEV ??
   defaultApiArtifactVersion;
 const prodApiArtifactVersion =
   getContextString('prod', 'apiArtifactVersion') ??
   getContextString('prodApiArtifactVersion') ??
+  process.env.API_ARTIFACT_VERSION_PROD ??
   defaultApiArtifactVersion;
 
 const defaultGoogleClientId =
