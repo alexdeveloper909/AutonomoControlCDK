@@ -6,6 +6,7 @@ import * as apigwv2Integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations'
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as kms from 'aws-cdk-lib/aws-kms';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as path from 'path';
@@ -134,6 +135,16 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       'AutonomoControlApiArtifactBucket',
       props.artifactBucketName,
     );
+
+    const sensitiveJsonKey = new kms.Key(this, 'SensitiveJsonKey', {
+      description: `Envelope encryption key for sensitive DynamoDB JSON blobs (${props.stageName}).`,
+      enableKeyRotation: true,
+      removalPolicy,
+    });
+    new kms.Alias(this, 'SensitiveJsonKeyAlias', {
+      aliasName: `alias/autonomo-control-${props.stageName}-sensitive-json`,
+      targetKey: sensitiveJsonKey,
+    });
 
     const googleClientIdParam = new cdk.CfnParameter(this, 'GoogleClientId', {
       type: 'String',
@@ -298,6 +309,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       environment: {
         ENV: props.stageName,
         DDB_TABLE_PREFIX: `${props.tableNamePrefix}-${props.stageName}`,
+        ENVELOPE_KMS_KEY_ARN: sensitiveJsonKey.keyArn,
       },
     });
 
@@ -306,6 +318,10 @@ export class AutonomoControlCdkStack extends cdk.Stack {
     this.workspaceMembersTable.grantReadWriteData(apiLambda);
     this.workspaceRecordsTable.grantReadWriteData(apiLambda);
     this.workspaceSettingsTable.grantReadWriteData(apiLambda);
+    sensitiveJsonKey.grantDecrypt(apiLambda);
+    sensitiveJsonKey.grant(apiLambda, 'kms:GenerateDataKey');
+
+    new CfnOutput(this, 'SensitiveJsonKmsKeyArn', { value: sensitiveJsonKey.keyArn });
 
     const httpApi = new apigwv2.HttpApi(this, 'HttpApi', {
       apiName: `autonomo-control-${props.stageName}`,

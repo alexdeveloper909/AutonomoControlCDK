@@ -53,8 +53,18 @@ Lambda environment variables are set per stage:
 
 - `ENV=dev|prod`
 - `DDB_TABLE_PREFIX=<tableNamePrefix>-<stage>` (so the Lambda uses the correct DynamoDB tables)
+- `ENVELOPE_KMS_KEY_ARN=<kmsKeyArn>` (per-stage KMS CMK used for envelope encryption of sensitive JSON fields)
 
 After deployment, see CloudFormation outputs for each stack (API URL, Cognito IDs, etc.).
+
+## Sensitive JSON envelope encryption (dev/prod)
+
+Each stage stack provisions a dedicated KMS CMK (with rotation enabled) for encrypting:
+
+- `workspace_records.payload_json`
+- `workspace_settings.settings_json`
+
+The key is output as `SensitiveJsonKmsKeyArn` and passed to the API Lambda via `ENVELOPE_KMS_KEY_ARN`.
 
 ## CloudWatch observability (Lambda)
 
