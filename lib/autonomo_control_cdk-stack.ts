@@ -311,7 +311,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       apiName: `autonomo-control-${props.stageName}`,
       corsPreflight: {
         allowCredentials: true,
-        allowHeaders: ['Authorization', 'Content-Type'],
+        allowHeaders: ['Authorization', 'Content-Type', 'sentry-trace', 'baggage'],
         allowMethods: [apigwv2.CorsHttpMethod.ANY],
         allowOrigins: corsAllowOriginsParam.valueAsList,
       },
