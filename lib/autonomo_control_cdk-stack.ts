@@ -369,6 +369,12 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       '/workspaces/{workspaceId}/settings',
       true,
     );
+    addRoute(
+      'ShareWorkspaceRoute',
+      apigwv2.HttpMethod.POST,
+      '/workspaces/{workspaceId}/share',
+      true,
+    );
 
     // Records
     addRoute(
