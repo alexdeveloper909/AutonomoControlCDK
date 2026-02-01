@@ -350,6 +350,10 @@ export class AutonomoControlCdkStack extends cdk.Stack {
     // Public
     addRoute('HealthRoute', apigwv2.HttpMethod.GET, '/health', false);
 
+    // Users
+    addRoute('GetUserMeRoute', apigwv2.HttpMethod.GET, '/users/me', true);
+    addRoute('PutUserMeRoute', apigwv2.HttpMethod.PUT, '/users/me', true);
+
     // Workspaces
     addRoute('ListWorkspacesRoute', apigwv2.HttpMethod.GET, '/workspaces', true);
     addRoute('CreateWorkspaceRoute', apigwv2.HttpMethod.POST, '/workspaces', true);

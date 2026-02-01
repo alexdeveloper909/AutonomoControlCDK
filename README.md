@@ -256,7 +256,7 @@ non-prod destroys on delete.
 
 ### 1) `users`
 - **PK**: `user_id` (string)
-- **Attributes**: `email`, `google_sub`, `created_at`, `updated_at`, ...
+- **Attributes**: `email`, `google_sub`, `preferred_language`, `created_at`, `updated_at`, ...
 - **GSI** `by_email`: PK `email`
 - **GSI** `by_google_sub`: PK `google_sub`
 
