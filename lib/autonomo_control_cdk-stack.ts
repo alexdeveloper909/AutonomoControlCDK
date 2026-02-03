@@ -374,6 +374,12 @@ export class AutonomoControlCdkStack extends cdk.Stack {
     addRoute('ListWorkspacesRoute', apigwv2.HttpMethod.GET, '/workspaces', true);
     addRoute('CreateWorkspaceRoute', apigwv2.HttpMethod.POST, '/workspaces', true);
     addRoute(
+      'DeleteWorkspaceRoute',
+      apigwv2.HttpMethod.DELETE,
+      '/workspaces/{workspaceId}',
+      true,
+    );
+    addRoute(
       'GetWorkspaceSettingsRoute',
       apigwv2.HttpMethod.GET,
       '/workspaces/{workspaceId}/settings',
