@@ -68,6 +68,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: isProd },
+      timeToLiveAttribute: 'ttl_epoch',
       removalPolicy,
     });
     this.workspacesTable.addGlobalSecondaryIndex({
@@ -84,6 +85,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: isProd },
+      timeToLiveAttribute: 'ttl_epoch',
       removalPolicy,
     });
     this.workspaceMembersTable.addGlobalSecondaryIndex({
@@ -106,6 +108,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: isProd },
+      timeToLiveAttribute: 'ttl_epoch',
       removalPolicy,
     });
     this.workspaceRecordsTable.addGlobalSecondaryIndex({
@@ -127,6 +130,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: isProd },
+      timeToLiveAttribute: 'ttl_epoch',
       removalPolicy,
     });
 
@@ -377,6 +381,12 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       'DeleteWorkspaceRoute',
       apigwv2.HttpMethod.DELETE,
       '/workspaces/{workspaceId}',
+      true,
+    );
+    addRoute(
+      'RestoreWorkspaceRoute',
+      apigwv2.HttpMethod.POST,
+      '/workspaces/{workspaceId}/restore',
       true,
     );
     addRoute(
