@@ -1,6 +1,6 @@
 {
   "name": "autonomo_control_cdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "bin": {
     "autonomo_control_cdk": "bin/autonomo_control_cdk.js"
   },

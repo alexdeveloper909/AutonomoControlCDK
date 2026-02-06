@@ -453,6 +453,12 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       '/workspaces/{workspaceId}/summaries/quarters',
       true,
     );
+    addRoute(
+      'RentaSummariesRoute',
+      apigwv2.HttpMethod.POST,
+      '/workspaces/{workspaceId}/summaries/renta',
+      true,
+    );
 
     const errorsAlarm = new cloudwatch.Alarm(this, 'ApiLambdaErrorsAlarm', {
       metric: apiLambda.metricErrors({
