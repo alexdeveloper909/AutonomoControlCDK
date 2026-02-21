@@ -408,6 +408,20 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       true,
     );
 
+    // Regular spendings
+    addRoute(
+      'ListRegularSpendingsRoute',
+      apigwv2.HttpMethod.GET,
+      '/workspaces/{workspaceId}/regular-spendings',
+      true,
+    );
+    addRoute(
+      'ListRegularSpendingOccurrencesRoute',
+      apigwv2.HttpMethod.GET,
+      '/workspaces/{workspaceId}/regular-spendings/occurrences',
+      true,
+    );
+
     // Records
     addRoute(
       'CreateRecordRoute',
