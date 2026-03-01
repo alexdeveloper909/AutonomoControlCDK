@@ -15,3 +15,6 @@ cdk.out
 .env.prod
 .env.*.local
 !.env*.example
+
+# Local-only docs (not committed)
+docs/USEFUL_COMMANDS.md

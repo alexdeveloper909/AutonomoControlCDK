@@ -1,0 +1,32 @@
+# Useful CDK commands (local)
+
+This file is intended to be copied to `docs/USEFUL_COMMANDS.md` for your personal
+workflow (AWS profile names, account ids, etc.). The `docs/USEFUL_COMMANDS.md`
+file is gitignored.
+
+## Deploy / diff / synth
+
+* `npx cdk deploy AutonomoControlSharedStack --profile <aws-profile>` deploy the shared artifact bucket (run once)
+* `npx cdk deploy "Dev/*" --profile <aws-profile>` deploy the dev stage (default region is `eu-west-1`)
+* `npx cdk deploy "Prod/*" --profile <aws-profile>` deploy the prod stage (default region is `eu-west-1`)
+* `npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile <aws-profile>` deploy only the dev stack
+* `npx cdk deploy "Prod/AutonomoControlCdkStack-prod" --profile <aws-profile>` deploy only the prod stack
+* `npx cdk deploy "Dev/*" -c dev.account=<account-id> -c dev.region=eu-west-1` override dev env
+* `npx cdk deploy "Prod/*" -c prod.account=<account-id> -c prod.region=eu-west-1` override prod env
+* `npx cdk deploy "Dev/*" -c devApiArtifactVersion=0.0.1` deploy dev with a specific API artifact version
+* `npx cdk deploy "Prod/*" -c prodApiArtifactVersion=0.0.1` deploy prod with a specific API artifact version
+* `npm run deploy:dev -- --profile <aws-profile>` deploy dev using `.env.dev.local` (auto `--parameters` on deploy)
+* `npm run deploy:prod -- --profile <aws-profile>` deploy prod using `.env.prod.local` (auto `--parameters` on deploy)
+* `npx cdk diff` compare deployed stack with current state
+* `npx cdk synth` emit synthesized CloudFormation templates
+
+## Google IdP (Dev example)
+
+* `npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile <aws-profile> --parameters GoogleClientId=<GOOGLE_CLIENT_ID> --parameters GoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev` enable Google IdP (set once via stack parameters)
+* `npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile <aws-profile> --no-previous-parameters -c devGoogleClientId=<GOOGLE_CLIENT_ID> -c devGoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev` enable Google IdP via context (no duplicated values)
+
+## CDK notices
+
+If you see CDK CLI notices (telemetry / Node support), they are informational. To silence them:
+* `npx cdk acknowledge 34892`
+* `npx cdk acknowledge 34635`

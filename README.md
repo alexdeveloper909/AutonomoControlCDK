@@ -158,7 +158,7 @@ This value is also exported as `CognitoGoogleIdpRedirectUri` from each stack.
 **1. Deploy without Google (first time only)**
 
 ```bash
-npx cdk deploy "Dev/*" --profile tokarevalex
+npx cdk deploy "Dev/*" --profile <aws-profile>
 ```
 
 Note the `CognitoDomain` and `CognitoGoogleIdpRedirectUri` outputs.
@@ -179,7 +179,7 @@ Note the `CognitoDomain` and `CognitoGoogleIdpRedirectUri` outputs.
 aws secretsmanager create-secret \
   --name "autonomo-control/google-oauth-client-secret-dev" \
   --secret-string "YOUR_GOOGLE_CLIENT_SECRET" \
-  --profile tokarevalex \
+  --profile <aws-profile> \
   --region eu-west-1
 ```
 
@@ -189,7 +189,7 @@ To update an existing secret:
 aws secretsmanager put-secret-value \
   --secret-id "autonomo-control/google-oauth-client-secret-dev" \
   --secret-string "NEW_SECRET_VALUE" \
-  --profile tokarevalex \
+  --profile <aws-profile> \
   --region eu-west-1
 ```
 
@@ -204,7 +204,7 @@ This will load env vars and (on `deploy`) automatically pass the corresponding C
 `--parameters` so you don’t have to type them.
 
 ```bash
-npm run deploy:dev -- --profile tokarevalex
+npm run deploy:dev -- --profile <aws-profile>
 ```
 
 Why this matters: `cdk deploy` uses **previous stack parameter values** by default
@@ -217,7 +217,7 @@ can
 This persists the values on the stack. Future deploys can omit these flags.
 
 ```bash
-npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile tokarevalex \
+npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile <aws-profile> \
   --parameters GoogleClientId=YOUR_GOOGLE_CLIENT_ID \
   --parameters GoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev \
   --parameters OAuthCallbackUrls=http://localhost:5173/auth/callback \
@@ -231,7 +231,7 @@ Use this if you want to drive the parameter defaults from `-c` / env vars and fo
 to apply those defaults on this deployment.
 
 ```bash
-npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile tokarevalex --no-previous-parameters \
+npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile <aws-profile> --no-previous-parameters \
   -c devGoogleClientId=YOUR_GOOGLE_CLIENT_ID \
   -c devGoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev \
   -c devOauthCallbackUrls=http://localhost:5173/auth/callback \
@@ -337,22 +337,4 @@ One settings item per workspace.
 * `npm run watch`   watch for changes and compile
 * `npm run test`    perform the jest unit tests
 * `npx cdk list`    list available stacks
-* `npx cdk deploy AutonomoControlSharedStack --profile tokarevalex` deploy the shared artifact bucket (run once)
-* `npx cdk deploy "Dev/*" --profile tokarevalex`   deploy the dev stage (our default region is `eu-west-1`)
-* `npx cdk deploy "Prod/*" --profile tokarevalex`  deploy the prod stage (our default region is `eu-west-1`)
-* `npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile tokarevalex`   deploy only the dev stack
-* `npx cdk deploy "Prod/AutonomoControlCdkStack-prod" --profile tokarevalex` deploy only the prod stack
-* `npx cdk deploy "Dev/*" -c dev.account=725601752375 -c dev.region=eu-west-1`   override dev env (our AWS account/region)
-* `npx cdk deploy "Prod/*" -c prod.account=725601752375 -c prod.region=eu-west-1` override prod env (our AWS account/region)
-* `npx cdk deploy "Dev/*" -c devApiArtifactVersion=0.0.1` deploy dev with a specific API artifact version
-* `npx cdk deploy "Prod/*" -c prodApiArtifactVersion=0.0.1` deploy prod with a specific API artifact version
-* `npm run deploy:dev -- --profile tokarevalex` deploy dev using `.env.dev.local` (auto `--parameters` on deploy)
-* `npm run deploy:prod -- --profile tokarevalex` deploy prod using `.env.prod.local` (auto `--parameters` on deploy)
-* `npx cdk diff`    compare deployed stack with current state
-* `npx cdk synth`   emits the synthesized CloudFormation template
-* `npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile tokarevalex --parameters GoogleClientId=<GOOGLE_CLIENT_ID> --parameters GoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev` Enable Google IdP (set once via stack parameters)
-* `npx cdk deploy "Dev/AutonomoControlCdkStack-dev" --profile tokarevalex --no-previous-parameters -c devGoogleClientId=<GOOGLE_CLIENT_ID> -c devGoogleClientSecretName=autonomo-control/google-oauth-client-secret-dev` Enable Google IdP via context (no duplicated values)
-
-If you see CDK CLI notices (telemetry / Node support), they are informational. To silence them:
-* `npx cdk acknowledge 34892`
-* `npx cdk acknowledge 34635`
+* More deploy/diff/synth examples: copy `docs/USEFUL_COMMANDS.md.example` → `docs/USEFUL_COMMANDS.md` (local-only; gitignored)
