@@ -468,6 +468,12 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       true,
     );
     addRoute(
+      'IvaSummariesRoute',
+      apigwv2.HttpMethod.POST,
+      '/workspaces/{workspaceId}/summaries/iva',
+      true,
+    );
+    addRoute(
       'RentaSummariesRoute',
       apigwv2.HttpMethod.POST,
       '/workspaces/{workspaceId}/summaries/renta',

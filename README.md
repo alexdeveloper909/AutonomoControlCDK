@@ -41,6 +41,10 @@ Route note:
 - The Lambda handler supports multiple paths internally, but API Gateway HTTP API v2 requires routes to be
   declared up front. If you add a new backend endpoint, also add the corresponding route in
   `lib/autonomo_control_cdk-stack.ts` (otherwise the path will return 404 and browser preflight may fail).
+- Current summary routes include `POST /workspaces/{workspaceId}/summaries/months`,
+  `POST /workspaces/{workspaceId}/summaries/quarters`,
+  `POST /workspaces/{workspaceId}/summaries/iva`, and
+  `POST /workspaces/{workspaceId}/summaries/renta`.
 
 You can deploy different Lambda artifact versions to dev and prod (e.g. test newer versions on dev):
 
