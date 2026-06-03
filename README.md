@@ -263,8 +263,7 @@ API Gateway uses a JWT authorizer configured for the stage's Cognito User Pool. 
 This stack provisions DynamoDB tables for users, workspaces, workspace members, workspace records,
 and workspace settings with the required GSIs. Table names are
 `<tableNamePrefix>-<stage>-<suffix>` (default prefix `autonomo-control`), set via
-`-c tableNamePrefix=...` or `TABLE_NAME_PREFIX`. Prod enables PITR and uses retain on delete;
-non-prod destroys on delete.
+`-c tableNamePrefix=...` or `TABLE_NAME_PREFIX`. Dev and prod enable PITR and retain on delete.
 
 ## Tables
 

@@ -39,7 +39,8 @@ export class AutonomoControlCdkStack extends cdk.Stack {
     super(scope, id, props);
 
     const isProd = props.stageName === 'prod';
-    const removalPolicy = isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY;
+    const removalPolicy = RemovalPolicy.RETAIN;
+    const enablePointInTimeRecovery = props.stageName === 'dev' || isProd;
     const name = (suffix: string) =>
       `${props.tableNamePrefix}-${props.stageName}-${suffix}`;
 
@@ -48,7 +49,9 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       partitionKey: { name: 'user_id', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: isProd },
+      pointInTimeRecoverySpecification: {
+        pointInTimeRecoveryEnabled: enablePointInTimeRecovery,
+      },
       removalPolicy,
     });
     this.usersTable.addGlobalSecondaryIndex({
@@ -67,7 +70,9 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       partitionKey: { name: 'workspace_id', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: isProd },
+      pointInTimeRecoverySpecification: {
+        pointInTimeRecoveryEnabled: enablePointInTimeRecovery,
+      },
       timeToLiveAttribute: 'ttl_epoch',
       removalPolicy,
     });
@@ -84,7 +89,9 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       sortKey: { name: 'member_key', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: isProd },
+      pointInTimeRecoverySpecification: {
+        pointInTimeRecoveryEnabled: enablePointInTimeRecovery,
+      },
       timeToLiveAttribute: 'ttl_epoch',
       removalPolicy,
     });
@@ -107,7 +114,9 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       sortKey: { name: 'record_key', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: isProd },
+      pointInTimeRecoverySpecification: {
+        pointInTimeRecoveryEnabled: enablePointInTimeRecovery,
+      },
       timeToLiveAttribute: 'ttl_epoch',
       removalPolicy,
     });
@@ -129,7 +138,9 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       partitionKey: { name: 'workspace_id', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: isProd },
+      pointInTimeRecoverySpecification: {
+        pointInTimeRecoveryEnabled: enablePointInTimeRecovery,
+      },
       timeToLiveAttribute: 'ttl_epoch',
       removalPolicy,
     });
