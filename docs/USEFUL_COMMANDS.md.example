@@ -13,8 +13,8 @@ file is gitignored.
 * `npx cdk deploy "Prod/AutonomoControlCdkStack-prod" --profile <aws-profile>` deploy only the prod stack
 * `npx cdk deploy "Dev/*" -c dev.account=<account-id> -c dev.region=eu-west-1` override dev env
 * `npx cdk deploy "Prod/*" -c prod.account=<account-id> -c prod.region=eu-west-1` override prod env
-* `npx cdk deploy "Dev/*" -c devApiArtifactVersion=0.0.1` deploy dev with a specific API artifact version
-* `npx cdk deploy "Prod/*" -c prodApiArtifactVersion=0.0.1` deploy prod with a specific API artifact version
+* `npx cdk deploy "Dev/*" -c devApiArtifactVersion=2.1.0` deploy dev with a specific API artifact version
+* `npx cdk deploy "Prod/*" -c prodApiArtifactVersion=2.1.0` deploy prod with a specific API artifact version
 * `npm run deploy:dev -- --profile <aws-profile>` deploy dev using `.env.dev.local` (auto `--parameters` on deploy)
 * `npm run deploy:prod -- --profile <aws-profile>` deploy prod using `.env.prod.local` (auto `--parameters` on deploy)
 * `npx cdk diff` compare deployed stack with current state

@@ -413,6 +413,12 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       true,
     );
     addRoute(
+      'GetWorkspaceBalanceRoute',
+      apigwv2.HttpMethod.GET,
+      '/workspaces/{workspaceId}/balance',
+      true,
+    );
+    addRoute(
       'ShareWorkspaceRoute',
       apigwv2.HttpMethod.POST,
       '/workspaces/{workspaceId}/share',

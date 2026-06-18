@@ -41,6 +41,8 @@ Route note:
 - The Lambda handler supports multiple paths internally, but API Gateway HTTP API v2 requires routes to be
   declared up front. If you add a new backend endpoint, also add the corresponding route in
   `lib/autonomo_control_cdk-stack.ts` (otherwise the path will return 404 and browser preflight may fail).
+- Balance route: `GET /workspaces/{workspaceId}/balance` is declared explicitly and supports the API
+  query parameters handled by the Lambda, such as `year` and `accountId`.
 - Current summary routes include `POST /workspaces/{workspaceId}/summaries/months`,
   `POST /workspaces/{workspaceId}/summaries/quarters`,
   `POST /workspaces/{workspaceId}/summaries/iva`, and
@@ -48,9 +50,9 @@ Route note:
 
 You can deploy different Lambda artifact versions to dev and prod (e.g. test newer versions on dev):
 
-- Global default: `API_ARTIFACT_VERSION=0.0.1` or `-c apiArtifactVersion=0.0.1`
-- Dev override: `-c devApiArtifactVersion=0.0.1`
-- Prod override: `-c prodApiArtifactVersion=0.0.1`
+- Global default: `API_ARTIFACT_VERSION=2.1.0` or `-c apiArtifactVersion=2.1.0`
+- Dev override: `-c devApiArtifactVersion=2.1.0`
+- Prod override: `-c prodApiArtifactVersion=2.1.0`
 - Alternatively via env files: `API_ARTIFACT_VERSION_DEV=0.0.1` / `API_ARTIFACT_VERSION_PROD=0.0.1`
 
 Lambda environment variables are set per stage:
@@ -58,6 +60,10 @@ Lambda environment variables are set per stage:
 - `ENV=dev|prod`
 - `DDB_TABLE_PREFIX=<tableNamePrefix>-<stage>` (so the Lambda uses the correct DynamoDB tables)
 - `ENVELOPE_KMS_KEY_ARN=<kmsKeyArn>` (per-stage KMS CMK used for envelope encryption of sensitive JSON fields)
+
+The Balance endpoint uses the existing Lambda integration, DynamoDB table environment variables, and
+IAM grants for `workspace_records`, `workspace_settings`, and membership/workspace tables. No extra
+DynamoDB table, index, environment variable, or IAM permission is required for this route.
 
 After deployment, see CloudFormation outputs for each stack (API URL, Cognito IDs, etc.).
 

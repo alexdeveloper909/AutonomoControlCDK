@@ -108,7 +108,7 @@ const sharedEnv = sharedContext
 const defaultApiArtifactVersion =
   getContextString('apiArtifactVersion') ??
   process.env.API_ARTIFACT_VERSION ??
-  '0.0.1';
+  '2.1.0';
 const devApiArtifactVersion =
   getContextString('dev', 'apiArtifactVersion') ??
   getContextString('devApiArtifactVersion') ??
