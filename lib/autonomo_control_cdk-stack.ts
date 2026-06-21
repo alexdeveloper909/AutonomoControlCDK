@@ -425,6 +425,38 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       true,
     );
 
+    // Business entities
+    addRoute(
+      'ListBusinessEntitiesRoute',
+      apigwv2.HttpMethod.GET,
+      '/workspaces/{workspaceId}/business-entities',
+      true,
+    );
+    addRoute(
+      'CreateBusinessEntityRoute',
+      apigwv2.HttpMethod.POST,
+      '/workspaces/{workspaceId}/business-entities',
+      true,
+    );
+    addRoute(
+      'UpdateBusinessEntityRoute',
+      apigwv2.HttpMethod.PUT,
+      '/workspaces/{workspaceId}/business-entities/{entityId}',
+      true,
+    );
+    addRoute(
+      'ArchiveBusinessEntityRoute',
+      apigwv2.HttpMethod.POST,
+      '/workspaces/{workspaceId}/business-entities/{entityId}/archive',
+      true,
+    );
+    addRoute(
+      'GetBusinessEntitySummaryRoute',
+      apigwv2.HttpMethod.GET,
+      '/workspaces/{workspaceId}/business-entities/{entityId}/summary',
+      true,
+    );
+
     // Regular spendings
     addRoute(
       'ListRegularSpendingsRoute',
@@ -494,6 +526,14 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       'RentaSummariesRoute',
       apigwv2.HttpMethod.POST,
       '/workspaces/{workspaceId}/summaries/renta',
+      true,
+    );
+
+    // Exchange rates
+    addRoute(
+      'GetNbuExchangeRateRoute',
+      apigwv2.HttpMethod.GET,
+      '/exchange-rates/nbu',
       true,
     );
 
