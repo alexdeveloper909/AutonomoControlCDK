@@ -534,6 +534,12 @@ export class AutonomoControlCdkStack extends cdk.Stack {
       '/workspaces/{workspaceId}/summaries/renta',
       true,
     );
+    addRoute(
+      'RetaSummariesRoute',
+      apigwv2.HttpMethod.POST,
+      '/workspaces/{workspaceId}/summaries/reta',
+      true,
+    );
 
     // Exchange rates
     addRoute(
