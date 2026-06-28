@@ -241,10 +241,15 @@ export class AutonomoControlCdkStack extends cdk.Stack {
     const disableGoogleIdpCondition = new cdk.CfnCondition(this, 'DisableGoogleIdp', {
       expression: cdk.Fn.conditionNot(enableGoogleIdpCondition),
     });
+    const webClientAuthFlows =
+      props.stageName === 'dev'
+        ? { userPassword: true, userSrp: true }
+        : { userSrp: true };
 
     const userPoolClientCognitoOnly = userPool.addClient('UserPoolClientCognitoOnly', {
       userPoolClientName: `autonomo-control-${props.stageName}-web`,
       generateSecret: false,
+      authFlows: webClientAuthFlows,
       oAuth: {
         flows: { authorizationCodeGrant: true },
         scopes: [
@@ -264,6 +269,7 @@ export class AutonomoControlCdkStack extends cdk.Stack {
     const userPoolClientWithGoogle = userPool.addClient('UserPoolClientWithGoogle', {
       userPoolClientName: `autonomo-control-${props.stageName}-web`,
       generateSecret: false,
+      authFlows: webClientAuthFlows,
       oAuth: {
         flows: { authorizationCodeGrant: true },
         scopes: [
